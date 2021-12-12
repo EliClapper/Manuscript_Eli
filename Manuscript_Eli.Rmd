@@ -1,7 +1,0 @@
----
-title: "Manuscript_Eli"
-author: "Eli Clapper"
-date: "12/12/2021"
-output: html_document
----
-
