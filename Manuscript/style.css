@@ -1,0 +1,39 @@
+:root {
+    --txtsize: 140%;
+    --linh: 2.5;
+  }
+
+* {
+    font-family: 'Times New Roman', Times, serif;
+    line-height: var(--linh);
+}
+
+p {
+    font-size: var(--txtsize);
+    font-family: 'Times New Roman', Times, serif;
+    text-align: justify;
+    text-indent: 5%;
+    margin: 0;
+   }
+
+h3 {
+    font-weight: bolder;
+    text-align: center;
+}
+
+.firstp {
+    text-indent: 0%;
+    margin: 0;
+}
+
+ol, ul{
+    font-size: var(--txtsize);
+    font-family: 'Times New Roman', Times, serif;
+    text-align: justify;
+    text-indent: 0%;
+}
+
+.h3left {
+    font-weight: bolder;
+    text-align: left;
+}

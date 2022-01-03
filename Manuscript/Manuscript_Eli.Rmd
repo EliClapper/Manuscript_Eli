@@ -1,26 +1,25 @@
 ---
-title: "Manuscript_Eli"
-author: "Eli Clapper"
+title: "Identification of quality-reflecting text features using Machine Learning Techniques"
+author: "Eli-Boaz Clapper"
 date: '`r format(Sys.time(), "%d %B, %Y")`'
+abstract: |
+  Here I will write an abstract about my manuscript. currently I do not have one so
+  I use sample text to fill up the missing abstract
+
 output: 
   html_document:
+    css: "style.css"
     fig_caption: yes
 bibliography: references.bib
 link-citations: yes
 linkcolor: blue
 ---
 
-Abstract
-==================
+<br><br><br><br><br><br>
 
-Input abstract here
+### Introduction
 
-\newpage
-
-
-Introduction
-==================
-In the secondary and tertiary educational years, most people recall the task of writing summaries. Summary writing has shown its merits in educational programs by aiding lingual development and improving overall academic achievement [@thiede2003summarizing; @gao2013effect; @marzec2016influence; @bangert2004effects]. Rating written summaries and using the ratings as a fair proxy for text quality remains a difficult task, however. Rating written text is a time-consuming procedure and subject to notable rater variability that decreases the reliability of the ratings [@eckes2008rater]. Although rubrics help reduce rater variability and rating time, the issues still linger [@harsch2013comparing: @wiseman2012comparison].
+<p class = "firstp"> In the secondary and tertiary educational years, most people recall the task of writing summaries. Summary writing has shown its merits in educational programs by aiding lingual development and improving overall academic achievement [@thiede2003summarizing; @gao2013effect; @marzec2016influence; @bangert2004effects]. Rating written summaries and using the ratings as a fair proxy for text quality remains a difficult task, however. Rating written text is a time-consuming procedure and subject to notable rater variability that decreases the reliability of the ratings [@eckes2008rater]. Although rubrics help reduce rater variability and rating time, the issues still linger [@harsch2013comparing: @wiseman2012comparison]. </p>
 
 A current and maybe everlasting shortage of teachers, as well as notable rater effects, call for computerized techniques that can take over the rating procedure [@sutcher2016coming]. That is partly why much research has gone into the identification of objective text features that reflect text quality such as textual coherence and sophistication [@crossley2014does; @macarthur2019linguistic; @mcnamara2010linguistic; @mcnamara2013natural; @perin2018assessing; @halliday2014cohesion]. However, as of yet, there is no consensus which features precisely should be regarded as important and to what degree [@mcnamara2010linguistic]. 
 
@@ -29,10 +28,12 @@ Conventional statistical models have tried to find the importance magnitude of t
 The Machine Learning [ML] field provides statistical techniques that are either more robust against violations of assumptions or require less assumptions in general [@james2013introduction]. Techniques such as regularization, cross-validation and ensemble methods help reduce overfitting and multicollinearity while simultaneously providing means to automate the rating of summaries [@jabbar2015methods]. 
 
 Some research has already explored the idea of ML for text feature identification [@sladoljev2017using; @madnani2013automated; @vsnajder2019analysing]. This research however, explored only a few out of many techniques, had a relatively small sample size, and used small rating scales. This thesis intends to build on previous research by exploring multiple ML techniques and posing the framework as a regression task with a larger-scaled rating. The intention is not only to identify the importance magnitude of certain text features, but also to automatize the summary rating procedure. This thesis therefore answers the following two research questions:
+<br>
 
 1. *To what extent can ML techniques automatically rate summaries?*
 2. *To what extent can ML techniques identify the importance magnitude of summary text features reflecting summary text quality?*
 
+<br>
 To answer the two posed research questions it is first explained what the data set looks like *ref methods*. Then, it is discussed which text features are extracted in this thesis *ref methods*. Afterwards the steps undergone for pre-processing of the written summary documents are made clear *ref methods*, and finally it is discussed which ML techniques are used and on which metrics they are evaluated *ref methods*. Figure \ref{fig:GRT} shows a graphical representation of the thesis.
 
 
@@ -41,58 +42,67 @@ To answer the two posed research questions it is first explained what the data s
 knitr::include_graphics("../Images/Flowchart_Thesis.jpg")
 ```
 
+<br><br>
 
-Methodology
-==================
-The data set contains 970 Dutch-written summaries of a passage about seasonal allergies made by Dutch secondary and tertiary educational level students. The tracks within Dutch secondary education for which data were collected were the vocational track (in Dutch: vmbo-gt), the school of higher general secondary education (havo), and the pre-university track (vwo). Data for the tertiary educational track come from post-vocational education (mbo). The summarisation exercise was part of a set of items that assess Dutch student's reading literacy. There are three of such sets available: 1F, 2F and 3F that respectively increase in difficulty [@CvTE]. The summary exercise in this thesis is of level 3F and was rated by examiners using an analytic rubric. The rubric had a large focus on gist extraction and a smaller focus on textual coherence. See Appendix *ref{appendix:a}* for the summary exercise and Appendix *ref{appendix:b}* for the rubric. The summary rating ranges from 0 - 16 with higher ratings reflecting higher quality summaries. Finally, the participants were instructed to write not more than 150 words. 
+### Methodology
+<p class = "firstp"> The data set contains 970 Dutch-written summaries of a passage about seasonal allergies made by Dutch secondary and tertiary educational level students. The tracks within Dutch secondary education for which data were collected were the vocational track (in Dutch: vmbo-gt), the school of higher general secondary education (havo), and the pre-university track (vwo). Data for the tertiary educational track come from post-vocational education (mbo). The summarisation exercise was part of a set of items that assess Dutch student's reading literacy. There are three of such sets available: 1F, 2F and 3F that respectively increase in difficulty [@CvTE]. The summary exercise in this thesis is of level 3F and was rated by examiners using an analytic rubric. The rubric had a large focus on gist extraction and a smaller focus on textual coherence. See Appendix *ref{appendix:a}* for the summary exercise and Appendix *ref{appendix:b}* for the rubric. The summary rating ranges from 0 - 16 with higher ratings reflecting higher quality summaries. Finally, the participants were instructed to write not more than 150 words. The dataset looks as follows for 970 entries, 1 is shown: </p>
 
 
-#### **Used Text Features**
-A number of text features will be calculated. Because the rubric was focused on gist extraction and textual coherence, some calculated features are either theorized or have practical support to be reflective of at least one of these dimensions [@sabatini2013preliminary; @madnani2013automated; @mcnamara2010linguistic; @pander2014t}. Other features do not necessarily reflect gist extraction or coherence, but may predict rating due to subjective differences in rater judgements, i.e. rater variability not explained by the rubric [@mcnamara2010linguistic; @kleijn2018clozing]. 
+```{r rawdata, echo = F}
+library(DT)
+textdocs <- read.csv2(file = "../data/raw_data.csv", sep = ",")
+textdocs <- textdocs[,c('text', 'schooltype', 'T3F_54')]
+
+datatable(textdocs, options = list(pageLength = 1))
+
+```
+
+
+<h3 class = "h3left"> Used Text Features </h3>
+<p class = "firstp"> A number of text features will be calculated. Because the rubric was focused on gist extraction and textual coherence, some calculated features are either theorized or have practical support to be reflective of at least one of these dimensions [@sabatini2013preliminary; @madnani2013automated; @mcnamara2010linguistic; @pander2014t}. Other features do not necessarily reflect gist extraction or coherence, but may predict rating due to subjective differences in rater judgements, i.e. rater variability not explained by the rubric [@mcnamara2010linguistic; @kleijn2018clozing]. </p>
 
 The features that will be calculated are:
+<br>
 
   * *Wordlength*: The number of words in a summary.
   * *Sentlength*: The number of sentences in a summary,
-  * SpelErr : The number of spelling errors in a summary.
   * *MaxCopy*: The length of the longest common substring. The longest common substring is the length of the most consecutive words in the summary copied from the passage. 
   * *CopiedSumm*: The number of 3-word or longer sequences copied from the passage divided by the word length of the summary.
   * *CopiedPass*: The number of 3-word or longer sequences copied from the passage divided by the word length of the passage.
   * *FirstSent*: The number of sentences in the passage of which the first sentence of a summary has copied 2-word or longer sequences from.
-  * *Rouge* (Recall-oriented understudy for gisting evaluation): Rouge is an algorithm developed by @lin2003automatic to automatically evaluate summaries based on n-gram co-occurrence with a model summary. A model summary in this thesis is a randomly sampled summary that got the highest rating. Rouge consists of multiple recall-oriented metrics of which five are used:
-    + *RougeN*: RougeN calculates the n-gram overlap between the model summaries and a student's summary. RougeN scores up until and including Rouge4 are calculated.
-    + *RougeL*: RougeL Calculates the longest common subsequence between the model summaries and a student's summary. The longest common subsequence is the number of words that occur in the model summary that also occur in the student's summary.
-    Rouge is available in Python 3.9.0 in package `rouge` [@van1995python].
-  * *T-scan* : T-scan is an algorithm that calculates features for Dutch text reflecting one of eight lingual domains such as language sophistication and textual coherence \cite{pander2014t}. The features that T-scan calculates along with the required pre-processing of the text documents can be found in the T-scan manual, available on [Radboud University's webservices](https://webservices.cls.ru.nl/). T-scan calculates 458 features of which some are almost identical copies of others and some only provide information for longer or more sophisticated text documents. To reduce the dimensionality while still retaining many interdependent features, a selection of 77 features from T-scan is made. The features are selected based on practical matters, such as the length and sophistication of the summaries, but also on previous theoretical research into text feature importance [@mcnamara2010linguistic; @kleijn2018clozing]. Appendix *ref{appendix:c}* shows which features are selected. T-scan is available as [a webtool](https://webservices.cls.ru.nl/tscan) or can be build [from source](https://github.com/proycon/tscan).
+  * *Rouge* (Recall-oriented understudy for gisting evaluation): Rouge is an algorithm developed by @lin2003automatic to automatically evaluate summaries based on n-gram co-occurrence with a model summary. A model summary in this thesis is a randomly sampled summary that got the highest rating. 
 
-*MaxCopy, CopiedSumm, CopiedPass, FirstSent* and *Rouge* reflect gist extraction. *SpelErr, SentLength, WordLength * and T-scan's features that do not reflect coherence may explain rater variability not explained by the rubric. 
+*MaxCopy, CopiedSumm, CopiedPass, FirstSent* and *Rouge* reflect gist extraction. *SentLength* and *WordLength* may explain rater variability not explained by the rubric. 
 
+<br>
 
-####  **Data pre-processing**
-The calculation of the text features can depend on a particular processed stage of the text documents. That is why first a list is provided with general processing steps and used software. Afterwards it is explained which of the pre-processing steps are required and altered to calculate the features. The list of pre-processing steps is as follows:
-    1. Text characters are encoded to the correct format.
-    2. Redundant white spaces are removed.
-    3.  Punctuation is removed
-    4.  All words are made lowercase.
-    5. Spelling errors are corrected. There are two options for this step. A colleague at Cito has developed an algorithm that can correct spelling errors, but I have yet to go into the details of this procedure. A solid back-up would be the `Hunspell` package available in Python [@Hunspell]. This package was originally developed for the Hungarian language to deal with word compounding and complex morphology, but is also available in Dutch [@Dutchspell].
-    
+<h3 class = "h3left"> Data pre-processing </h3>
+<p class = "firstp"> The calculation of the text features can depend on a particular processed stage of the text documents. That is why first a list is provided with general processing steps and used software. Afterwards it is explained which of the pre-processing steps are required and altered to calculate the features. The list of pre-processing steps is as follows: </p>
 
-*Rouge, MaxCopy, CopiedSumm, CopiedPass *and *Wordlength* require all steps to be applied in the order they are presented in. For \textit{Sentlength} and *FirstSent*, the steps only need to be followed ending with step 3, where during step 3 the dots are retained and semicolons are replaced with dots. Finally, if `Hunspell` were to be used to correct spelling errors, it would require step 1 through 4 in the presented order.
+<ol>
+  <li>Text characters are encoded to the correct format.</li>
+  <li>Redundant white spaces are removed.</li>
+  <li>Punctuation is removed</li>
+  <li> All words are made lowercase.</li>
+</ol>
 
-Because the gist extraction features depend on exact N-gram copies of the passage or summary, stemming/lemmatization and stop-word removal are not desired. Numeric characters are retained because the passage includes statistics on seasonal allergies. Numeric characters thus have a good probability of being relevant information. Furthermore, the output of this stage is a matrix containing the ratings and the text features of which the latter will be standardized prior to analysis. This matrix, thus not containing string values, serve as input for the ML algorithms. This means that processing steps that are typically needed for Bag-Of-Word models, such as stop word removal and stemming/lemmatization are not required. Figure *ref{fig::data_snippet}* shows part of the matrix to be analyzed by the ML techniques with synthetic data.
+*Rouge, MaxCopy, CopiedSumm, CopiedPass *and *Wordlength* require all steps to be applied in the order they are presented in. For *Sentlength* and *FirstSent*, the steps only need to be followed ending with step 3, where during step 3 the dots are retained and semicolons are replaced with dots.
 
-**input data matrix**
+Because the gist extraction features depend on exact N-gram copies of the passage or summary, stemming/lemmatization and stop-word removal are not desired. Furthermore, the output of this stage is a matrix containing the ratings and the text features of which the latter will be standardized prior to analysis. This matrix, thus not containing string values, serve as input for the ML algorithms. This means that processing steps that are typically needed for Bag-Of-Word models, such as stop word removal and stemming/lemmatization are not required. The matrix that serves as input for the ML algorithms looks as follows:
+
+```{r InputMatrix, class.source = "test"}
+mtcars[1:5, "mpg"]
+
+```
+
 
 All pre-processing and all feature calculations, except those calculated by T-scan, will be performed in Python 3.9.0 within Rstudio IDE (version 1.4.17.17) [@Rstudio2021].
 
-####  **ML techniques and performance metrics**
-In total, eight ML techniques are used to answer the research questions. Three of them are considered black-box techniques, while the other five produce models for which variable importance can be extracted. The black-box techniques include Random forests, Neural networks and Gaussian RBF Support Vector Regression [SVR], respectively available in packages `randomForest, neuralnet` and `e1071` and respective functions `randomForest(), neuralnet() `and `sv()` [@andyrf; @davidSVM; @StefanNN]. The other five techniques include Ridge-, Lasso-, Elastic net-, Linear Principle Component Regression [LPCR], and Multivariate Linear Regression [MLR] of which the first three are available in package `glmnet` with function `glmnet()` and the latter two are available in the `stats` package with functions `lm()` and `prcomp()` provided by R Core Team [@glmnetJerome; @RCoreTeam]. 
+<h3 class = "h3left"> ML techniques and performance metrics </h3>
+<p class = "firstp"> In total, five ML techniques are used to answer the research questions. These five algorithms produce models for which variable importance can be extracted. These techniques include Ridge-, Lasso-, Elastic net-, Linear Principle Component Regression [LPCR], and Multivariate Linear Regression [MLR] of which the first three are available in package `glmnet` with function `glmnet()` and the latter two are available in the `stats` package with functions `lm()` and `prcomp()` provided by R Core Team [@glmnetJerome; @RCoreTeam]. These techniques were chosen because of their ability for regularization or data reduction, which reduces multicollinearity. These techniques are intended to identify the importance magnitude of text features while dealing with multicollinearity and overfitting. MLR is used as a benchmark to compare performance of the other algorithms to. </p>
 
-These specific black-box techniques were chosen because of several reasons: 1.) The techniques have forms that are not as much affected by multicollinearity, 2.) the current study has a relatively large sample size, allowing for high-variance techniques, and 3.) these techniques have well-documented software available in R, increasing accessibility [@obite2020multicollinearity; @farrell2019machine]. The black-box techniques are intended to overcome the time-costly process of rating the summaries. The more comprehensible linear techniques were chosen because of their ability for regularization or data reduction, which reduces multicollinearity. These techniques are intended to identify the importance magnitude of text features while dealing with multicollinearity and overfitting. MLR is used as a benchmark to compare performance of the other algorithms to.
-
-All algorithms are evaluated using 10-fold Cross-Validation [CV] with the data set first being split up in a train, test and validation set with respective proportions .60-.20-.20. The hyperparameters are optimized using grid search on the training and validation sets. Some hyperparameters have fixed default values in their respective algorithms that will not be tuned. The hyperparameters that are varied or deviate from default are shown in table **ref{tab::hyper}**, along with their interpretation. The choice for the varying values for the hyperparameters are based on a balance between computational time and research suggested values to improve performance on high-dimensional multicollinear data [@probst2017tune; @goldstein2011random; @probst2019hyperparameters; @stathakis2009many; @shen2021neural; @obite2020multicollinearity; @farrell2019machine; @wainer2021tune]. The parameters that lead to best model performance will be used to train the models on the combined training and validation set. The models are then tested on the test set to obtain the final metrics of evaluation. Model performance is defined below.
-
-**Table 1** Varying and/or default-deviating hyperparameter values
+All algorithms are evaluated using 10-fold Cross-Validation [CV] with the data set first being split up in a train, test and validation set with respective proportions .60-.20-.20. The hyperparameters are optimized using grid search on the training and validation sets. Some hyperparameters have fixed default values in their respective algorithms that will not be tuned. The hyperparameters that are varied or deviate from default are shown in table **ref{tab::hyper}**, along with their interpretation. The choice for the varying values for the hyperparameters are based on a balance between computational time and research suggested values to improve performance on high-dimensional multicollinear data [@probst2017tune; @goldstein2011random; @probst2019hyperparameters; @stathakis2009many; @obite2020multicollinearity; @farrell2019machine; @wainer2021tune]. The parameters that lead to best model performance will be used to train the models on the combined training and validation set. The models are then tested on the test set to obtain the final metrics of evaluation. 
+**Table 2** Varying and/or default-deviating hyperparameter values
 
 | Algorithm    | Parameter    | Interpretation                    | Value                                                 |
 |--------------|--------------|-----------------------------------|-------------------------------------------------------|
@@ -100,33 +110,25 @@ All algorithms are evaluated using 10-fold Cross-Validation [CV] with the data s
 | Elastic Net  | $\lambda$    | Amount of regularization          | default in `glmnet()`                                 |
 |              | $\alpha$     | Amount of L1-L2 regularization    | default in `glmnet()`                                 |
 | LPCR         | $n_{pc}$     | Number of extracted PC's          | 3-10                                                  |
-|              | $R_{type}    | Rotation type                     | Varimax, Oblimin                                      |
-| RandomForest | $n_{tree}$   | Number of trees to grow           | 500, 1000, 1500                                       |
-|              | $mtry$       | Feature sample size per node      | $\frac{p}{3}^*$, $\frac{p}{2.5}$                        |
-|              | $node_{size} | Minimal size per terminal node    | 5, 10                                                 |
-| Neural Net   | $n_{neuron}$ | Number of neurons in hidden layer | 2, 4                                                  |
-|              | $n_{layer}$  | Number of hidden layers           | 3                                                     |
-| SVR          | $\gamma$     | Curvature in decision boundaries  | $\frac{1}{p}$, $\frac{1}{\widetilde{X}_{{i-j}}}^{**}$ |
-|              | $C$          | Margin size                       | 0.1, 1, 10                                            |
+|              | $R_{type}$    | Rotation type                     | Varimax, Oblimin                                      |
 
-<font size="2"> *p = number of extracted text features </font>
-<br>
-<font size="2"> **$\widetilde{X}_{{i-j}}$ = the median of the distribution of $|x_i - x_j|^2$ which can be obtained using the `sigest` function in package `kernlab` [@AlexKernlab]</font>
+All algorithms are evaluated on three predictive performance metrics that determine their usability in automatically scoring summaries. Those metrics are the proportion of explained variance in the human ratings by the model: $R^2$, the Root of the Mean Squared Error: $RMSE$, and the Mean Absolute Deviation: $MAD$. The algorithms are additionally investigated on which features/principle components are selected as relevant. Relevance is in turn defined for when a regression coefficient does not contain 0 in its 95\% confidence interval. Additionally, for PCR, a text feature is regarded as important if its factor loading $\geq$ .20 on at least one of the selected principle components. Both $MAD$ and $RMSE$ are used as $MAD$ is more robust against outliers. $R^2$ is used to determine how much variance in the ratings can be explained by the used text features. $RMSE$ will be the leading metric to determine predictive performance. 
 
+All analyses will be performed in R (version 4.1.2) using Rstudio IDE (version 1.4.1717).
+<br><br>
 
+### Results
 
-
-Results
-==================
 
 input Results
+<br><br>
 
-Discussion
-==================
+### Discussion
+
 
 input discussion
 
-\newpage
+<br><br>
 
 References
 ==================
