@@ -37,3 +37,17 @@ ol, ul{
     font-weight: bolder;
     text-align: left;
 }
+
+.math.inline{
+    font-size: calc(var(--txtsize)/2);
+}
+
+.caption{
+    text-indent: 0%;
+    font-size: calc(var(--txtsize)/ 1.1);
+}
+
+.space{
+    margin-top: 40px;
+    margin-bottom: 40px;
+}

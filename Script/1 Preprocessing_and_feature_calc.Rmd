@@ -1,0 +1,172 @@
+#Preprocessing and feature calculation
+
+used R libraries
+```{r}
+library(stringr)
+```
+
+Load in raw data and subset for used predictors
+```{r}
+textdocs <- read.csv2(file = "../Data/1 raw_data.csv", sep = ",")
+textdocs <- textdocs[,c('text', 'schooltype', 'T3F_54')]
+textdocs$id <- 1:nrow(textdocs)
+
+passage <- as.character(read.delim('../Data/2 passage_raw.txt', header = F, encoding = "UTF-8"))
+```
+
+###Step 1 of preprocessing: encoding to correct format
+In the textdocuments,the ë and é are are wrongly encoded as `ï¿½` and something like `EÃ©n` respectively. By string replacing the ï¿½ with an 'e' and then encoding the documents to UTF8 we get a rather fair result. The passage is already encoded correctly
+```{r}
+c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
+textdocs$text <- gsub("ï¿½", "e", textdocs$text)
+Encoding(textdocs$text) <- "UTF-8"
+c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
+```
+
+###step 2a and 3. Remove punctation and redundant whitespaces
+This step is used to calculate *SentLength* and thus dots, exclamation marks and question marks are retained and semicolons are replaced with dots.
+```{r}
+txt_for_sentlength <- gsub(";", ".", textdocs$text) #replace semicolons with dots
+txt_for_sentlength <- str_replace_all(txt_for_sentlength, "[^[:alnum:][:space:].?!]", "")
+txt_for_sentlength <- gsub("[[:blank:]]+", " ", txt_for_sentlength) #remove redundant whitespaces
+```
+
+###calculate SentLength
+```{r}
+#count the number of .!? for every document
+Sentlength <- unlist(
+  lapply(
+    txt_for_sentlength, function(x){
+      length(gregexpr('[[:alnum:] ][.!?]', x)[[1]])
+      }))
+```
+
+
+###step 2b and 3. Removing punctuation and redundant whitespaces
+Now it is done to calculate the other features and so all punctuation can be removed. This is also done for the passage so that *MaxCopy* can be calculated
+```{r}
+textdocs$text <- gsub("[[:punct:]]", '', textdocs$text)
+textdocs$text <- gsub("[[:blank:]]+", " ", textdocs$text)
+
+passage <- str_replace_all(passage, "[^[:alnum:][:space:]]", "")
+passage <- gsub("[[:blank:]]+", " ", passage)
+
+```
+
+###export to CSV so python can do the other calculations
+```{r}
+write.csv(textdocs, '../Data/3 Data_Processed.csv')
+write.csv(passage, '../Data/4 Passage_Processed.csv')
+
+```
+
+
+##python
+used Python libraries
+```{python}
+import pandas as pd
+import numpy as np
+import re
+from rouge_score import rouge_scorer as rs #rouge algorithm 
+from nltk import ngrams
+```
+load in data and pre-process passage
+```{python}
+textdocs = pd.read_csv('../Data/3 Data_Processed.csv', encoding = 'latin-1') #reading in preprocessed data
+
+
+passage = pd.read_csv('../Data/4 Passage_Processed.csv', encoding = 'latin-1') 
+passage = passage.drop('Unnamed: 0',1) #drop unused column
+passage = str(passage.to_numpy()) #convert to string
+
+passage[0:3] #it contains some characters that are not letters at the start and end due to the fact it was once an array
+passage[-3:] 
+
+#lets delete the non letters
+if len(passage) > 3 :
+    passage = passage[0: 0:] + passage[3::]
+passage = passage[:-3:] 
+passage #on this, maxcopy can be calculated
+```
+
+Calculate *Wordlength*
+```{python}
+WordLength = []
+for row in range(len(textdocs)):
+  wordlength = len(textdocs.loc[row, 'text'].split())
+  WordLength.append(wordlength)
+WordLength[0:5]
+```
+
+
+Calculate *MaxCopy*
+```{python}
+def Max_Copy(a, b):
+    table = [[0] * (len(b) + 1) for index in range(len(a) + 1)] #creates list of lists of len(b) 0's len(a) times
+    l = 0 #memory
+    for i, ca in enumerate(a, 1): #enumerate serves as a counter for i and j
+        for j, cb in enumerate(b, 1):
+            if ca == cb: #if the indices in both lists are the same, add 1 to the i,jth table index 
+                table[i][j] = table[i - 1][j - 1] + 1 
+                if table[i][j] > l: #if the index value is bigger than what is stored in l, then make l that value
+                    l = table[i][j]
+    return l
+
+MaxCopy = [] #storage
+for row in range(len(textdocs)):
+  maxcopy = Max_Copy(passage.split(), textdocs.loc[row, 'text'].split())
+  MaxCopy.append(maxcopy)
+MaxCopy[0:5]
+
+```
+
+Calculate *Rouge*
+```{python}
+highscore = textdocs['T3F_54'].max()
+
+perfect_score = textdocs[textdocs['T3F_54'] == highscore]
+perfect_score.head()
+perfect_score.index = range(2) #this is necessary to iterate over them
+
+
+scorer = rs.RougeScorer(['rouge1', 'rouge2', 'rouge3'], use_stemmer=False) #set rules for algorithm
+#for loop below iterates over the docs and perfect_scores to obtain a fmeasure rougeN score
+rouge1 = [] #create empty list
+rouge2 = [] #create empty list
+rouge3 = [] #create empty list
+
+for row in range(len(textdocs)):
+  for row2 in range(len(perfect_score)):
+    RougeScore = scorer.score(perfect_score.loc[row2,'text'], textdocs.loc[row, 'text'])
+    rouge1_score = RougeScore['rouge1'][0] #this is the precision for the rougeN feature
+    rouge2_score = RougeScore['rouge2'][0] #this is the precision for the rougeN feature
+    rouge3_score = RougeScore['rouge3'][0] #this is the precision for the rougeN feature
+    rouge1.append(rouge1_score)
+    rouge2.append(rouge2_score)
+    rouge3.append(rouge3_score)
+    
+rouge1Avg = np.average(np.array(rouge1).reshape(-1, 2), axis=1) #obtain average precision over both rougeN 
+rouge2Avg = np.average(np.array(rouge2).reshape(-1, 2), axis=1) #obtain average precision over both rougeN 
+rouge3Avg = np.average(np.array(rouge3).reshape(-1, 2), axis=1) #obtain average precision over both rougeN 
+```
+
+Export features so that R can read it for analyses
+```{python}
+Pyfeatures = [rouge1Avg, rouge2Avg, rouge3Avg, WordLength, MaxCopy, textdocs['id']]
+PyFeats = pd.DataFrame(Pyfeatures).transpose()
+PyFeats.rename(columns = {0 : 'rouge1', 1 : 'rouge2', 2 : 'rouge3', 3 : 'WordLength', 4 : 'MaxCopy',5: 'id'}, inplace = True)
+
+PyFeats.to_csv('../Data/5 PyFeats.csv')
+
+```
+
+Finally we append SentLength and the ratings to the features calculated in Python to obtain the input matrix for the algorithms.
+```{r}
+PyFeats <- read.csv('../Data/5 PyFeats.csv')[,-1]
+TextFeatures <- cbind(Rating = textdocs[['T3F_54']], Sentlength, PyFeats)
+TextFeatures <- TextFeatures[, - ncol(TextFeatures)] #omit id variable
+TextFeatures[, 2:ncol(TextFeatures)] <- scale(TextFeatures[,2:ncol(TextFeatures)]) #scale matrix
+
+write.csv(TextFeatures, '../Data/6 TextFeatures.csv', quote = F)
+```
+
