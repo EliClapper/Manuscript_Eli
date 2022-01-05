@@ -38,6 +38,7 @@ ol, ul{
     text-align: left;
 }
 
+
 .math.inline{
     font-size: calc(var(--txtsize)/2);
 }

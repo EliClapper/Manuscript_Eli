@@ -6,7 +6,7 @@ metrics <- function(obs, pred){
 }
 
 
-LPCR <- function(train, test, npc){
+LPCR <- function(train, test, npc, relevance = F){
   
   # obtain predictor matrices
   train_pred <- as.matrix(train[!(colnames(train) %in% c('Rating','ind'))]) 
@@ -24,5 +24,39 @@ LPCR <- function(train, test, npc){
   fit.lpcr <- lm(Rating ~ ., data = train_pca_scores)
   pred <- predict(fit.lpcr, test_pca_scores)
   
-  return(metrics(test$Rating, pred))
+  #if we do not need relevance, just return metrics
+  if(!relevance){
+    return(metrics(test$Rating, pred))
+  }
+  
+  #obtain relevance
+  CIs <- confint(fit.lpcr)
+  unimp <- rownames(CIs[CIs[,1] < 0 & CIs[,2] >0, ]) #unimportant predictors
+  imp <- rownames(CIs)[!rownames(CIs) %in% unimp][-1] #important predictors
+  
+  PC_selected <- train_pca$rotation[,imp]
+  imp_feat <- apply(PC_selected, 1, function(x){
+    imp <- !sum(abs(x) < 0.2) == length(imp)
+  })
+  
+  imp.pcr <- names(which(imp_feat))
+
+  return(list(metrics = metrics(test$Rating, pred), imp.pcr = imp.pcr))
 }
+
+#function to obtain list with metrics over folds and RMSE values
+evaluation <- function(metrics){
+  eval <- lapply(metrics, function(x){ #obtain mean and variances of metrics over folds
+    apply(x, 2, function(y){
+      c(m = mean(y), variance = var(y))})
+  })
+  
+  RMSE <- sapply(eval, function(x){ #obtain RMSE values vector
+    x[1,1]})
+  
+  lowestRMSE <- paste0(names(which(RMSE == min(RMSE))), ": ", min(RMSE)) #obtain condition with lowest RMSE
+  
+  
+  return(list(evaluation = eval, RMSE = RMSE, lowest_RMSE = lowestRMSE))
+}
+

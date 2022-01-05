@@ -3,7 +3,7 @@ title: "Identification of quality-reflecting text features using Machine Learnin
 author: "Eli-Boaz Clapper"
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 abstract: |
-  Rating written summaries and using the ratings as a fair proxy for text quality is a time-costly procedure that is prone to rater variability. Computerized techniques that aid the automatic scoring of text can aid the procedure. Previous research has tried to identify quality-reflecting text features to be used in automatization techniques, but the statistical models have been subject to overfitting and multicollinearity, leading to imprecise results. This thesis views the issue in a machine learning framework to help aid the rating automatization and to identify quality-reflecting text features. It is shown that.... and .... this implies that ... and ...
+  Rating written summaries and using the ratings as a fair proxy for text quality is a time-costly procedure that is prone to rater variability. Computerized techniques that aid the automatic scoring of text can aid the procedure. Previous research has tried to identify quality-reflecting text features to be used in automatization techniques, but the statistical models have been subject to overfitting and multicollinearity, leading to imprecise results. This thesis views the issue in a machine learning framework to help aid the rating automatization and to identify quality-reflecting text features. It is found that the linear model as well as the Elastic Net algorithms perform best, while Lasso performs worst. This is likely because only six predictors were used in this mini-thesis. It is also found that the number of words a summary contains seems to be the best predictor for the rating. Future research should use all features and all algorithms for more conclusive results.
 
 output: 
   html_document:
@@ -13,7 +13,7 @@ bibliography: references.bib
 link-citations: yes
 linkcolor: blue
 ---
-
+<p style= "font-size:120%"> keywords: <em> machine learning, summary writing, automatization</em></p>
 <br><br><br><br><br><br>
 
 ### Introduction
@@ -40,7 +40,7 @@ To answer the two posed research questions it is first explained what the data s
 #![Image 1: *Graphic Representation of Thesis*](../Images/Flowchart_Thesis.jpg)
 knitr::include_graphics("../Images/Flowchart_Thesis.jpg")
 ```
-  <p class = "caption"><em>Figure 1.</em> Graphical Representation of the Thesis</p>
+  <p class = "caption"><em>Figure 1.</em> Graphical Representation of the full Thesis</p>
 </div>
 
 <br><br>
@@ -115,7 +115,23 @@ All pre-processing and the calculation of *SentLength* will be performed in R (v
 <h3 class = "h3left"> ML techniques and performance metrics </h3>
 <div>
 
-<p class = "firstp"> In total, five ML techniques are used to answer the research questions. These five algorithms produce models for which variable importance can be extracted. These techniques include Ridge-, Lasso-, Elastic net-, Linear Principle Component Regression [LPCR], and Multivariate Linear Regression [MLR] of which the first three are available in package `glmnet` with function `glmnet()` and the latter two are available in the `stats` package with functions `lm()` and `prcomp()` provided by R Core Team [@glmnetJerome; @RCoreTeam]. These techniques were chosen because of their ability for regularization or data reduction, which reduces multicollinearity. These techniques are intended to identify the importance magnitude of text features while dealing with multicollinearity and overfitting. MLR is used as a benchmark to compare performance of the other algorithms to. </p>
+<p class = "firstp"> In total, five ML techniques are used to answer the research questions. These five algorithms produce models for which variable importance can be extracted. These techniques include Ridge-, Lasso-, Elastic net-, Linear Principle Component Regression [LPCR], and Multivariate Linear Regression [MLR] of which the first three are available in package `glmnet` with function `glmnet()` and the latter two are available in the `stats` package with functions `lm()` and `prcomp()` provided by R Core Team [@glmnetJerome; @RCoreTeam]. `glmnet()` minimizes the following Residual Sum of Squares [RSS]: </p>
+
+<div class = "space">
+\begin{align}
+
+RSS_{ElasticNet} &= \frac{1}{N} \sum_{i=1}^{N} (y_i - \beta_0+\boldsymbol{\beta}^T x_i) + \lambda\left[(1-\alpha)\|\boldsymbol{\beta}\|_2^2/2 + \alpha \|\boldsymbol{\beta}\|_1\right] \\
+
+RSS_{Ridge} &= \frac{1}{N} \sum_{i=1}^{N} (y_i - \beta_0+\boldsymbol{\beta}^T x_i) + \lambda(\|\boldsymbol{\beta}\|_2^2/2) \\
+
+RSS_{Lasso} &= \frac{1}{N} \sum_{i=1}^{N} (y_i - \beta_0+\boldsymbol{\beta}^T x_i) + \lambda\| \boldsymbol{\beta}\|_1
+
+\end{align}
+</div>
+
+<p class = "firstp">with respect to $\beta_0$ and $\beta^T$  where $\alpha$ is the tuning parameter for elastic net that determines the amount of Lasso or Ridge regression. Setting $\alpha = 0$ or $\alpha = 1$ defines $RSS$ for Ridge and Lasso Respectively. </p>
+
+These techniques were chosen because of their ability for regularization or data reduction, which reduces multicollinearity. These techniques are intended to identify the importance magnitude of text features while dealing with multicollinearity and overfitting. MLR is used as a benchmark to compare performance of the other algorithms to.
 
 All algorithms are evaluated using 10-fold Cross-Validation [CV] with the data set first being split up in a train, and test set with respective proportions .60-.40. The hyperparameters are optimized using grid search on the validation sets. Some hyperparameters have fixed default values in their respective algorithms that will not be tuned. The hyperparameters that are varied or deviate from default are shown in <a href = "#tab3"> table 3</a>, along with their interpretation. The choice for the varying values for the hyperparameters are based on a balance between computational time and research suggested values to improve performance on high-dimensional multicollinear data [@probst2017tune; @goldstein2011random; @probst2019hyperparameters; @stathakis2009many; @obite2020multicollinearity; @farrell2019machine; @wainer2021tune]. The parameters that lead to best model performance will be used to train the models on the entire training set. The models are then tested on the test set to obtain the final metrics of evaluation. 
 
@@ -126,27 +142,42 @@ All algorithms are evaluated using 10-fold Cross-Validation [CV] with the data s
 |--------------|--------------|-----------------------------------|-------------------------------------------------------|
 | Lasso/Ridge  | $\lambda$    | Amount of regularization          | default in `glmnet()`                                 |
 | Elastic Net  | $\lambda$    | Amount of regularization          | default in `glmnet()`                                 |
-|              | $\alpha$     | Amount of L1-L2 regularization    | default in `glmnet()`                                 |
+|              | $\alpha$     | Amount of L1-L2 regularization    | 0.1-0.9                                 |
 | LPCR         | $n_{pc}$     | Number of extracted PC's          | 1-4                                                  |
 
 </div>
 </div>
 
-All algorithms are evaluated on three predictive performance metrics that determine their usability in automatically scoring summaries. Those metrics are the proportion of explained variance in the human ratings by the model: $R^2$, the Root of the Mean Squared Error: $RMSE$, and the Mean Absolute Deviation: $MAD$. The algorithms are additionally investigated on which features/principle components are selected as relevant. Relevance is in turn defined for when a regression coefficient does not contain 0 in its 95\% confidence interval. Additionally, for PCR, a text feature is regarded as important if its factor loading $\geq$ .20 on at least one of the selected principle components. Both $MAD$ and $RMSE$ are used as $MAD$ is more robust against outliers. $R^2$ is used to determine how much variance in the ratings can be explained by the used text features. $RMSE$ will be the leading metric to determine predictive performance. 
+All algorithms are evaluated on three predictive performance metrics that determine their usability in automatically scoring summaries. Those metrics are the proportion of explained variance in the human ratings by the model: $R^2$, the Root of the Mean Squared Error: $RMSE$, and the Mean Absolute Deviation: $MAD$. The algorithms are additionally investigated on which features/principle components are selected as relevant. Relevance is in turn defined for Lasso when the algorithm selects a feature, for MLR when a regression coefficient does not contain 0 in its 95\% confidence interval, for Ridge and Elastic Net when the absolute regression coefficient > .05. Additionally, for PCR, a text feature is regarded as important if its factor loading $\geq$ .20 on at least one of the selected principle components. Both $MAD$ and $RMSE$ are used as $MAD$ is more robust against outliers. $R^2$ is used to determine how much variance in the ratings can be explained by the used text features. $RMSE$ will be the leading metric to determine predictive performance. 
 
 All analyses will be performed in R (version 4.1.2) using Rstudio IDE (version 1.4.1717).
 <br><br>
 
 ### Results
 
+<h4> <strong>Predictive performance</strong> </h4>
+<p class = "firstp"> The ability of the algorithms to correctly predict new data points was determined by looking at the $R^2$, $MAD$ and $RMSE$ values they produced. The results indicate that the MLR and Elastic Net algorithms performed best $R^2 = 0.57$, $MAD = 1.71$, $RMSE = 2.27$, closely followed by ridge regression, $R^2 = 0.56$, $MAD = 1.74$, $RMSE = 2.28$ and LPCR, $R^2 = 0.50$, $MAD = 1.89$, $RMSE = 2.42$. Lasso performed worst: $R^2 = 0.34$, $MAD = 2.29$, $RMSE = 2.8$. <a href = "#tab4"> Table 4 </a> shows the results
+</p>
 
-input Results
-<br><br>
+<div class = "space" id = "tab4">
+<p class = "caption">Table 4. <em>Predictive performance of algorithms</em></p>
+```{r resmetrics, echo=F}
+results <- readRDS("../Results/Results.RData")
 
-### Discussion
+datatable(round(results$performance,2), options = list(dom = 't'))
+```
+</div>
 
+<h4> <strong>Feature selection</strong> </h4>
+<p class = "firstp">It was also investigated how often certain features were selected as relevant by the algorithms. <a href = "#fig2"> Figure 2 </a> shows the results.</p>
 
-input discussion
+<div class = "space" id = "fig2">
+<p class = "caption"><em>Figure 2.</em> Feature importance</p>
+```{r featureimportance, echo=F}
+featimp <- sort(results$feature_imp, decreasing = T)
+plot(featimp, type = "b", main = "Number of times feature is selected", xlab = "Features", ylab = "Counts")
+```
+</div>
 
 
 <br><br>

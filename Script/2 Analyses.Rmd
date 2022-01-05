@@ -1,85 +1,205 @@
 #ML Analysis
 
+used libraries
+```{r}
+library(glmnet)
+```
+
 load in data
 ```{r}
-TextFeatures <- read.csv2(file = "../Data/6 TextFeatures.csv", sep = ",")[,-1] #load in data minus csv-appended column
-TextFeatures <- sapply(TextFeatures, as.numeric) #convert to numeric
+#load in data minus csv-appended column
+TextFeatures <- read.csv2(file = "../Data/6 TextFeatures.csv", sep = ",")[,-1] 
+
+#convert to numeric
+TextFeatures <- sapply(TextFeatures, as.numeric) 
 ```
 
 split data into train and test
 ```{r}
-set.seed(6164900) #seed for reproducability
-splits <- sample(1:nrow(TextFeatures), size = floor(nrow(TextFeatures)*0.6))
+#seed for reproducability
+set.seed(6164900) 
+
+#proportion of complete set dedicated to training set and split into test and training data
+prop.train <- 0.6 
+splits <- sample(1:nrow(TextFeatures), size = floor(nrow(TextFeatures)*prop.train)) 
 
 train <- TextFeatures[splits, ]
 test <- TextFeatures[-splits, ]
 
+K <- 10 #number of folds
+
 ```
 
-evaluation metrics
+evaluation metrics and other functions used
 ```{r}
 source("Functions.R")
 ```
 
-Multilinear Regression. Does not need CV in this case, no parameters to be tuned
+###Multilinear Regression. 
+Does not need CV in this case, no parameters to be tuned.
 ```{r}
-fit_lm <- lm(Rating ~ ., data = as.data.frame(train))
-pred_lm <- predict(fit_lm, newdata = as.data.frame(test))
-metrics_lm <- metrics(test[,1], pred_lm) #not bad actually
+fit_lm <- lm(Rating ~ ., data = as.data.frame(train)) #train model
+pred_lm <- predict(fit_lm, newdata = as.data.frame(test)) #test model
+metrics_lm <- metrics(test[,1], pred_lm) #obtain metrics
 
 CIs <- confint(fit_lm, level = 0.95) #save CI
 unimp <- rownames(CIs[CIs[,1] < 0 & CIs[,2] >0, ]) #unimportant predictors
 imp_lm <- rownames(CIs)[!rownames(CIs) %in% unimp][-1] #important predictors
 ```
 
-preprocess for other algorithms
+###lasso
+```{r}
+set.seed(6164900)
+Lassocv <- cv.glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 1, family = 'gaussian', standardize = F,
+                    nfolds = K) #setting alpha to 1, runs Lasso
+
+#evaluate cross validation
+plot(Lassocv)
+
+#train model
+fit.Lasso <- glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 1, family = 'gaussian', standardize = F,
+                    lambda = 1.5)
+
+#obtain important predictors
+lasmat <- as.matrix(coef(fit.Lasso))
+imp_Lasso <- names(lasmat[lasmat != 0,])[-1]
+
+#evaluate model
+pred_lasso <- predict(fit.Lasso, newx = test[,2:ncol(test)])
+metrics_lasso <- metrics(test[,1], pred_lasso)
+
+```
+
+
+###Ridge
 ```{r}
 K <- 10 #number of CVs
+
+set.seed(6164900)
+Ridgecv <- cv.glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 0, family = 'gaussian', standardize = F,
+                    nfolds = K) #setting alpha to 0, runs Ridge.
+
+plot(Ridgecv) #lowest MSE is when lambda = its lowest value. also variance is not that big at that value
+
+#train model
+fit.Ridge <- glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 0, family = 'gaussian', standardize = F,
+                    lambda = Ridgecv$lambda.min)
+                    
+#variable importance
+ridgemat <- as.matrix(coef(fit.Ridge))
+imp_Ridge <- names(ridgemat[abs(ridgemat) > 0.05,])[-1]
+
+#evaluate model
+pred_ridge <- predict(fit.Ridge, newx = test[,2:ncol(test)])
+metrics_ridge <- metrics(test[,1], pred_ridge)
+
+```
+
+
+###Elastic Net
+```{r}
+#to cross-validate alpha
+alpha <- seq(0.1, 0.9, by = 0.1)
+
+#cross-validation of alpha
+set.seed(6164900)
+glmnetcvs <- list()
+for (i in alpha) {
+    glmnetcvs[[which(alpha == i)]] <- cv.glmnet(x = train[, 2:ncol(train)], y = train[,1], family = 'gaussian',
+                                              standardize = F, nfolds = K, alpha = i)
+}
+names(glmnetcvs) <- sprintf("alpha%g", alpha)
+
+#obtain lowest lambda and check variance of model at that lambda by looking at the plot
+minlambda <- sapply(glmnetcvs, function(x){
+  plot(x)
+  x$lambda.min
+})
+min.lambda <- minlambda[minlambda == min(minlambda)] #alpha = 0.9, lambda = 0.0029
+
+#train model
+fit.EN <- glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 0.9, family = 'gaussian', standardize = F,
+                    lambda = min.lambda)
+                    
+#variable importance
+ENmat <- as.matrix(coef(fit.EN))
+imp_EN <- names(ENmat[abs(ENmat) > 0.05,])[-1]
+
+#evaluate model
+pred_EN <- predict(fit.EN, newx = test[,2:ncol(test)])
+metrics_EN <- metrics(test[,1], pred_EN)
+
+```
+
+
+###LPCR
+preprocess for LPCR
+```{r}
 train <- cbind(train, ind = sample(rep(1:K, length.out = nrow(train)))) #indicator variable
 traindf <- as.data.frame(train)
 testdf <- as.data.frame(test)
 
 ```
 
-principle component analysis algorithm
+Linear Principle Component regression algorithm.
 ```{r}
-npc <- 1:4
+npc <- 1:4 #hyperparameters to be cross-validated
 
-metrics_lpcr <- list()
-for(j in npc){
-  metric_cv <- matrix(NA, K, 3)
-  colnames(metric_cv) <- c("RMSE", "MAD", "R2")
-  for(i in 1:K){
-    traincv <- traindf[traindf$ind != i,]
-    validation <- traindf[traindf$ind == i,]
+metrics_lpcr <- list() #save results of each condition in a list
+for(j in npc){ #for every condition
+  metric_cv <- matrix(NA, K, 3) #save results for a fold in matrix
+  colnames(metric_cv) <- c("RMSE", "MAD", "R2") #give comprehensive names
+  for(i in 1:K){ #for everly fold
+    traincv <- traindf[traindf$ind != i,] #set training set
+    validation <- traindf[traindf$ind == i,] #set testing set
    
-   metric_cv[i,] <- LPCR(traincv, validation, npc = j)
+   metric_cv[i,] <- LPCR(traincv, validation, npc = j, relevance = F) #run LPCR to obtain only metrics and save
   }
-  metrics_lpcr[[j-(npc[1]-1)]] <- metric_cv
+  metrics_lpcr[[j-(npc[1]-1)]] <- metric_cv #save in storage
 }
 
-names(metrics_lpcr) <- sprintf("NPC%d", npc)
+names(metrics_lpcr) <- sprintf("NPC%d", npc) #give comprehensive names
 
 ```
 
 LPCR obtain best condition
 ```{r}
-(eval_lpcr <- lapply(metrics_lpcr, function(x){ #obtain mean and variances of metrics over folds
-  apply(x, 2, function(y){
-    c(m = mean(y), variance = var(y))
-  })
-}))
-
-RMSE_lpcr <- sapply(eval_lpcr, function(x){ #obtain RMSE values vector
-  x[1,1]
-})
-
-RMSE_lpcr #not much difference between 3 and 4
-names(which(RMSE_lpcr == min(RMSE_lpcr))) #using 4 PC's gives the lowest RMSE, however it is not much better than when 3 PC's are used, so 3 is preferred. 
+eval.pcr <- evaluation(metrics_lpcr) #evaluate the list of conditions
+eval.pcr$evaluation #list of metrics per condition
+eval.pcr$RMSE #not much difference between 3 and 4
+eval.pcr$lowest_RMSE #using 4 PC's gives the lowest RMSE, however it is not much better than when 3 PC's are used, so 3 is preferred. 
 ```
 
-LPCR obtain metrics. *do not forget to obtain important variables*
+LPCR test dataset
 ```{r}
-LPCR(traindf, testdf, npc = 3)
+fit_lpcr <- LPCR(traindf, testdf, npc = 3, relevance = T) #set relevance to true returns variable importance
+metrics_lpcr <- fit_lpcr$metrics
+imp_lpcr <- fit_lpcr$imp.pcr
+```
+
+
+###obtain final results
+```{r}
+#importance_lst <- ls(pattern = "imp_")
+#metrics_lst <- ls(pattern = "metrics_")
+#remove all variables except the ones we still need
+#rm(list=setdiff(ls(), c(importance_lst, metrics_lst))) 
+
+#obtain metrics
+result_metrics <- do.call(rbind, mget(ls(pattern = "metrics_")))
+
+#obtain variable importance
+result_feature_importance <- table(do.call(c, mget(ls(pattern = "imp_"))))
+
+results <- list(performance = result_metrics, feature_imp = result_feature_importance)
+
+saveRDS(results, "../Results/Results.RData")
+
+```
+
+###delete environment and console if desired
+```{r}
+rm(list=ls())
+cat("\014")
 ```
 
