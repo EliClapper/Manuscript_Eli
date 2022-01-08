@@ -17,10 +17,10 @@ passage <- as.character(read.delim('../Data/2 passage_raw.txt', header = F, enco
 ###Step 1 of preprocessing: encoding to correct format
 In the textdocuments,the ë and é are are wrongly encoded as `ï¿½` and something like `EÃ©n` respectively. By string replacing the ï¿½ with an 'e' and then encoding the documents to UTF8 we get a rather fair result. The passage is already encoded correctly
 ```{r}
-c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
+#c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
 textdocs$text <- gsub("ï¿½", "e", textdocs$text)
 Encoding(textdocs$text) <- "UTF-8"
-c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
+#c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
 ```
 
 ###step 2a and 3. Remove punctation and redundant whitespaces
@@ -57,30 +57,27 @@ passage <- gsub("[[:blank:]]+", " ", passage)
 ```{r}
 write.csv(textdocs, '../Data/3 Data_Processed.csv')
 write.csv(passage, '../Data/4 Passage_Processed.csv')
-
 ```
 
 
 ##python
-used Python libraries
+used Python modules
 ```{python}
 import pandas as pd
 import numpy as np
-import re
 from rouge_score import rouge_scorer as rs #rouge algorithm 
-from nltk import ngrams
+
 ```
 load in data and pre-process passage
 ```{python}
 textdocs = pd.read_csv('../Data/3 Data_Processed.csv', encoding = 'latin-1') #reading in preprocessed data
 
-
 passage = pd.read_csv('../Data/4 Passage_Processed.csv', encoding = 'latin-1') 
 passage = passage.drop('Unnamed: 0',1) #drop unused column
 passage = str(passage.to_numpy()) #convert to string
 
-passage[0:3] #it contains some characters that are not letters at the start and end due to the fact it was once an array
-passage[-3:] 
+#passage[0:3] #it contains some characters that are not letters at the start and end due to the fact it was once an array
+#passage[-3:] 
 
 #lets delete the non letters
 if len(passage) > 3 :

@@ -7,3 +7,11 @@
  The results section are also shortened to only include the essential information and there is no discussion.
  
  If you are interested in my full thesis regarding the subject, please let me know and I will send it your way as soon as it is finished.
+
+
+ # Modules and packages
+ 1. To run the R script the following R packages are required: `stringr` version (1.4.0), `stats` version (4.1.2), `glmnet` (version 4.3)
+ 2. To knit the manuscript to html, 'DT' version (0.20) is required
+ 3. To run python within Rstudio, library `reticulate` (version 1.22) is required.
+ 4. To run the Python script, the following python modules are required: `pandas` version (1.3.0), `numpy` version (1.21.0), and `rouge_score` version (0.0.4). 
+ Do note that `rouge_score` is a third party module that requires online installation.

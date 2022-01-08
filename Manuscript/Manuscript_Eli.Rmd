@@ -163,7 +163,6 @@ All analyses will be performed in R (version 4.1.2) using Rstudio IDE (version 1
 <p class = "caption">Table 4. <em>Predictive performance of algorithms</em></p>
 ```{r resmetrics, echo=F}
 results <- readRDS("../Results/Results.RData")
-
 datatable(round(results$performance,2), options = list(dom = 't'))
 ```
 </div>
@@ -196,7 +195,6 @@ Appendix A
 #![Image 1: *Graphic Representation of Thesis*](../Images/Exercise.png)
 knitr::include_graphics("../Images/Exercise.png")
 knitr::include_graphics("../Images/Exercise2.png")
-
 ```
 </div>
 <br><br>
