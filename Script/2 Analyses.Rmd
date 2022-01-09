@@ -1,11 +1,12 @@
 #ML Analysis
 
-used libraries
+###load libraries and functions
 ```{r}
 library(glmnet)
+source("Functions.R")
 ```
 
-load in data
+###load in data
 ```{r}
 #load in data minus csv-appended column
 TextFeatures <- read.csv2(file = "../Data/6 TextFeatures.csv", sep = ",")[,-1] 
@@ -14,7 +15,7 @@ TextFeatures <- read.csv2(file = "../Data/6 TextFeatures.csv", sep = ",")[,-1]
 TextFeatures <- sapply(TextFeatures, as.numeric) 
 ```
 
-split data into train and test
+###split data into train and test
 ```{r}
 #seed for reproducability
 set.seed(6164900) 
@@ -30,12 +31,8 @@ K <- 10 #number of folds
 
 ```
 
-evaluation metrics and other functions used
-```{r}
-source("Functions.R")
-```
 
-###Multilinear Regression. 
+##Multilinear Regression. 
 Does not need CV in this case, no parameters to be tuned.
 ```{r}
 fit_lm <- lm(Rating ~ ., data = as.data.frame(train)) #train model
@@ -47,7 +44,7 @@ unimp <- rownames(CIs[CIs[,1] < 0 & CIs[,2] >0, ]) #unimportant predictors
 imp_lm <- rownames(CIs)[!rownames(CIs) %in% unimp][-1] #important predictors
 ```
 
-###lasso
+##lasso
 ```{r}
 set.seed(6164900)
 Lassocv <- cv.glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 1, family = 'gaussian', standardize = F,
@@ -60,7 +57,7 @@ plot(Lassocv)
 fit.Lasso <- glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 1, family = 'gaussian', standardize = F,
                     lambda = 1.5)
 
-#obtain important predictors
+#obtain important predictors excluding intercept
 lasmat <- as.matrix(coef(fit.Lasso))
 imp_Lasso <- names(lasmat[lasmat != 0,])[-1]
 
@@ -71,7 +68,7 @@ metrics_lasso <- metrics(test[,1], pred_lasso)
 ```
 
 
-###Ridge
+##Ridge
 ```{r}
 set.seed(6164900)
 Ridgecv <- cv.glmnet(x = train[, 2:ncol(train)], y = train[,1], alpha = 0, family = 'gaussian', standardize = F,
@@ -94,7 +91,7 @@ metrics_ridge <- metrics(test[,1], pred_ridge)
 ```
 
 
-###Elastic Net
+##Elastic Net
 ```{r}
 #to cross-validate alpha
 alpha <- seq(0.1, 0.9, by = 0.1)
@@ -130,7 +127,7 @@ metrics_EN <- metrics(test[,1], pred_EN)
 ```
 
 
-###LPCR
+##LPCR
 preprocess for LPCR
 ```{r}
 train <- cbind(train, ind = sample(rep(1:K, length.out = nrow(train)))) #indicator variable
@@ -139,7 +136,7 @@ testdf <- as.data.frame(test)
 
 ```
 
-Linear Principle Component regression algorithm.
+###Linear Principle Component regression algorithm.
 ```{r}
 npc <- 1:4 #hyperparameters to be cross-validated
 
@@ -160,7 +157,7 @@ names(metrics_lpcr) <- sprintf("NPC%d", npc) #give comprehensive names
 
 ```
 
-LPCR obtain best condition
+###LPCR obtain best condition
 ```{r}
 eval.pcr <- evaluation(metrics_lpcr) #evaluate the list of conditions
 eval.pcr$evaluation #list of metrics per condition
@@ -168,7 +165,7 @@ eval.pcr$RMSE #not much difference between 3 and 4
 eval.pcr$lowest_RMSE #using 4 PC's gives the lowest RMSE, however it is not much better than when 3 PC's are used, so 3 is preferred. 
 ```
 
-LPCR test dataset
+###LPCR obtain test metrics
 ```{r}
 fit_lpcr <- LPCR(traindf, testdf, npc = 3, relevance = T) #set relevance to true returns variable importance
 metrics_lpcr <- fit_lpcr$metrics
@@ -176,7 +173,7 @@ imp_lpcr <- fit_lpcr$imp.pcr
 ```
 
 
-###obtain final results
+##obtain final results
 ```{r}
 #importance_lst <- ls(pattern = "imp_")
 #metrics_lst <- ls(pattern = "metrics_")
@@ -195,7 +192,7 @@ saveRDS(results, "../Results/Results.RData")
 
 ```
 
-###delete environment and console if desired
+##delete environment and console if desired
 ```{r}
 rm(list=ls())
 cat("\014")

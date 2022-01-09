@@ -15,7 +15,7 @@ passage <- as.character(read.delim('../Data/2 passage_raw.txt', header = F, enco
 ```
 
 ###Step 1 of preprocessing: encoding to correct format
-In the textdocuments,the ë and é are are wrongly encoded as `ï¿½` and something like `EÃ©n` respectively. By string replacing the ï¿½ with an 'e' and then encoding the documents to UTF8 we get a rather fair result. The passage is already encoded correctly
+In the textdocuments,the ë and é are are wrongly encoded as `ï¿½` and something like `EÃ©n` respectively. By string replacing the ï¿½ with an 'e' and then encoding the documents to UTF8 we get a rather fair result. The passage is already encoded correctly.
 ```{r}
 #c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
 textdocs$text <- gsub("ï¿½", "e", textdocs$text)
@@ -53,7 +53,7 @@ passage <- gsub("[[:blank:]]+", " ", passage)
 
 ```
 
-###export to CSV so python can do the other calculations
+###export to CSV so python can do the other calculations.
 ```{r}
 write.csv(textdocs, '../Data/3 Data_Processed.csv')
 write.csv(passage, '../Data/4 Passage_Processed.csv')
@@ -61,14 +61,14 @@ write.csv(passage, '../Data/4 Passage_Processed.csv')
 
 
 ##python
-used Python modules
+###used Python modules.
 ```{python}
 import pandas as pd
 import numpy as np
 from rouge_score import rouge_scorer as rs #rouge algorithm 
 
 ```
-load in data and pre-process passage
+###load in data and pre-process passage.
 ```{python}
 textdocs = pd.read_csv('../Data/3 Data_Processed.csv', encoding = 'latin-1') #reading in preprocessed data
 
@@ -86,7 +86,7 @@ passage = passage[:-3:]
 passage #on this, maxcopy can be calculated
 ```
 
-Calculate *Wordlength*
+###Calculate *Wordlength*.
 ```{python}
 WordLength = []
 for row in range(len(textdocs)):
@@ -96,7 +96,7 @@ WordLength[0:5]
 ```
 
 
-Calculate *MaxCopy*
+###Calculate *MaxCopy*.
 ```{python}
 def Max_Copy(a, b):
     table = [[0] * (len(b) + 1) for index in range(len(a) + 1)] #creates list of lists of len(b) 0's len(a) times
@@ -117,7 +117,7 @@ MaxCopy[0:5]
 
 ```
 
-Calculate *Rouge*
+###Calculate *Rouge*.
 ```{python}
 highscore = textdocs['T3F_54'].max()
 
@@ -147,7 +147,7 @@ rouge2Avg = np.average(np.array(rouge2).reshape(-1, 2), axis=1) #obtain average 
 rouge3Avg = np.average(np.array(rouge3).reshape(-1, 2), axis=1) #obtain average precision over both rougeN 
 ```
 
-Export features so that R can read it for analyses
+###Export features to .csv so that R can read it for analyses.
 ```{python}
 Pyfeatures = [rouge1Avg, rouge2Avg, rouge3Avg, WordLength, MaxCopy, textdocs['id']]
 PyFeats = pd.DataFrame(Pyfeatures).transpose()
@@ -157,7 +157,7 @@ PyFeats.to_csv('../Data/5 PyFeats.csv')
 
 ```
 
-Finally we append SentLength and the ratings to the features calculated in Python to obtain the input matrix for the algorithms.
+###Finally we append SentLength and the ratings to the features calculated in Python to obtain the input matrix for the algorithms.
 ```{r}
 PyFeats <- read.csv('../Data/5 PyFeats.csv')[,-1]
 TextFeatures <- cbind(Rating = textdocs[['T3F_54']], Sentlength, PyFeats)
