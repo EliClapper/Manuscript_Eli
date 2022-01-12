@@ -14,7 +14,7 @@ link-citations: yes
 linkcolor: blue
 ---
 <p style= "font-size:120%"> keywords: <em> machine learning, summary writing, automatization</em></p>
-<br><br><br><br><br><br>
+<br><br><br>
 
 ### Introduction
 

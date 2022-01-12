@@ -1,26 +1,28 @@
+#obtains metrics RMSE, MAD and R2 for an algorithm
 metrics <- function(obs, pred){
-  RMSE <- sqrt(mean((obs-pred)^2))
-  MAD <- mean(abs(obs-pred))
-  R2 <- 1-((sum((obs-pred)^2))/(sum((obs - mean(obs))^2)))
+  RMSE <- sqrt(mean((obs-pred)^2)) #Root Mean Square Error
+  MAD <- mean(abs(obs-pred))       #Mean Absolute Deviation
+  R2 <- 1-((sum((obs-pred)^2))/(sum((obs - mean(obs))^2)))  #R-sqaured
   return(c(RMSE = RMSE, MAD = MAD, R2 = R2))
 }
 
 
+#Linear Principle Component Analysis on current dataset
 LPCR <- function(train, test, npc, relevance = F){
   
   # obtain predictor matrices
   train_pred <- as.matrix(train[!(colnames(train) %in% c('Rating','ind'))]) 
   test_pred <- as.matrix(test[!(colnames(test) %in% c('Rating'))])
   
-  # run pcr on test dat
+  # run pcr on train data
   train_pca <- prcomp(train_pred)
   train_pca_scores <- as.data.frame(cbind(Rating = train$Rating, PC = train_pca$x[,1:npc]))
   
-  #run imposed matrix on test data
+  # impose matrix rotation on test data
   test_pca_scores <- predict(train_pca, newdata = test_pred)[,1:npc] 
-  test_pca_scores <- as.data.frame(cbind(PC = test_pca_scores)) #obtain dataframe with PC scores for the testing data
+  test_pca_scores <- as.data.frame(cbind(PC = test_pca_scores))
   
-  #fit lm with PC's and evaluate on test data
+  # fit lm with PC's and evaluate on test data
   fit.lpcr <- lm(Rating ~ ., data = train_pca_scores)
   pred <- predict(fit.lpcr, test_pca_scores)
   
@@ -46,15 +48,19 @@ LPCR <- function(train, test, npc, relevance = F){
 
 #function to obtain list with metrics over folds and RMSE values
 evaluation <- function(metrics){
-  eval <- lapply(metrics, function(x){ #obtain mean and variances of metrics over folds
+  
+  # obtain mean and variances of metrics over folds
+  eval <- lapply(metrics, function(x){ 
     apply(x, 2, function(y){
       c(m = mean(y), variance = var(y))})
   })
   
-  RMSE <- sapply(eval, function(x){ #obtain RMSE values vector
+  # obtain RMSE values vector
+  RMSE <- sapply(eval, function(x){ 
     x[1,1]})
   
-  lowestRMSE <- paste0(names(which(RMSE == min(RMSE))), ": ", min(RMSE)) #obtain condition with lowest RMSE
+  # obtain condition with lowest RMSE
+  lowestRMSE <- paste0(names(which(RMSE == min(RMSE))), ": ", min(RMSE)) 
   
   
   return(list(evaluation = eval, RMSE = RMSE, lowest_RMSE = lowestRMSE))

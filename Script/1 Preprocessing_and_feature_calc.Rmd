@@ -20,7 +20,7 @@ In the textdocuments,the ë and é are are wrongly encoded as `ï¿½` and somet
 #c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
 textdocs$text <- gsub("ï¿½", "e", textdocs$text)
 Encoding(textdocs$text) <- "UTF-8"
-#c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # wrong encoding of ë/é
+#c(textdocs$text[39], textdocs$text[148], textdocs$text[690], textdocs$text[710]) # looks fair
 ```
 
 ###step 2a and 3. Remove punctation and redundant whitespaces
